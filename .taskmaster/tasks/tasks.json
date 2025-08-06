@@ -1,0 +1,272 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Structure and Dependencies",
+        "description": "Initialize the project repository with the required structure and install all necessary dependencies for the Link Checker Application.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Create a new Python project directory\n2. Initialize Git repository\n3. Set up Poetry for dependency management\n4. Install core dependencies:\n   - streamlit>=1.15.0\n   - pandas>=1.3.0\n   - requests>=2.25.0\n   - python-dotenv>=0.19.0\n   - streamlit-aggrid>=0.3.0\n   - asyncio>=3.4.3\n5. Create a .env.example file for API keys\n6. Set up project structure:\n   ```\n   link-checker/\n   ├── app.py           # Main Streamlit application\n   ├── requirements.txt # For non-Poetry installations\n   ├── pyproject.toml   # Poetry configuration\n   ├── .env.example     # Example environment variables\n   ├── .gitignore       # Git ignore file\n   ├── utils/           # Utility functions\n   │   ├── __init__.py\n   │   ├── csv_handler.py\n   │   ├── exa_api.py    # Will include batch processing (10 URLs at a time)\n   │   ├── batch_processor.py # For handling batched API requests\n   │   └── openrouter_api.py\n   └── README.md        # Project documentation\n   ```\n7. Configure .gitignore to exclude .env files and virtual environments\n8. Add additional dependencies for batch processing:\n   - aiohttp>=3.8.0     # For async batch requests\n   - tqdm>=4.62.0       # For progress tracking",
+        "testStrategy": "1. Verify all dependencies install correctly with Poetry\n2. Ensure project structure is created as specified\n3. Confirm Git repository is initialized properly\n4. Test that .env file is properly excluded from Git tracking\n5. Verify batch processing dependencies are properly installed\n6. Test basic project imports to ensure structure is correct",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add batch processing structure",
+            "description": "Update project structure to include batch processing capabilities",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Install batch processing dependencies",
+            "description": "Add aiohttp and tqdm packages for handling asynchronous batch requests and progress tracking",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Environment Configuration",
+        "description": "Create a secure configuration system for managing API keys and environment variables for Exa.AI and OpenRouter integrations.",
+        "details": "1. Create a configuration module for loading environment variables\n2. Implement secure API key management using python-dotenv\n3. Define required environment variables:\n   - EXA_API_KEY: API key for Exa.AI content retrieval\n   - OPENROUTER_API_KEY: API key for OpenRouter GPT OSS 120B access\n4. Add validation to ensure all required environment variables are present\n5. Create helper functions to access configuration values\n6. Implement error handling for missing or invalid configuration\n\nSample implementation:\n```python\n# config.py\nimport os\nfrom dotenv import load_dotenv\n\nload_dotenv()\n\ndef get_required_env(name):\n    value = os.getenv(name)\n    if not value:\n        raise ValueError(f\"Missing required environment variable: {name}\")\n    return value\n\ndef get_exa_api_key():\n    return get_required_env(\"EXA_API_KEY\")\n\ndef get_openrouter_api_key():\n    return get_required_env(\"OPENROUTER_API_KEY\")\n\ndef validate_config():\n    \"\"\"Validate all required configuration is present\"\"\"\n    try:\n        get_exa_api_key()\n        get_openrouter_api_key()\n        return True\n    except ValueError as e:\n        return str(e)\n```",
+        "testStrategy": "1. Test loading environment variables from .env file\n2. Verify error handling for missing environment variables\n3. Test validation function with complete and incomplete configurations\n4. Ensure API keys are properly retrieved and not exposed in logs",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement CSV Upload and Validation",
+        "description": "Create functionality to upload, parse, and validate CSV files containing business names and URLs.",
+        "details": "1. Create a CSV handler module in utils/csv_handler.py\n2. Implement functions to validate CSV format and required columns\n3. Support various CSV encodings (utf-8, latin-1, etc.)\n4. Validate that required columns 'business_name' and 'URL' exist\n5. Check for empty or malformed data\n6. Return pandas DataFrame with validated data\n\nSample implementation:\n```python\n# utils/csv_handler.py\nimport pandas as pd\nimport io\n\ndef validate_csv(file_content, required_columns=['business_name', 'URL']):\n    \"\"\"Validate CSV file format and required columns\"\"\"\n    try:\n        # Try different encodings\n        for encoding in ['utf-8', 'latin-1', 'iso-8859-1']:\n            try:\n                df = pd.read_csv(io.StringIO(file_content.decode(encoding)))\n                break\n            except UnicodeDecodeError:\n                continue\n        else:\n            return False, \"Unable to decode CSV file. Please check encoding.\"\n        \n        # Check for required columns\n        missing_columns = [col for col in required_columns if col not in df.columns]\n        if missing_columns:\n            return False, f\"Missing required columns: {', '.join(missing_columns)}\"\n        \n        # Check for empty dataframe\n        if df.empty:\n            return False, \"CSV file contains no data\"\n        \n        # Check for empty values in required columns\n        for col in required_columns:\n            if df[col].isna().any():\n                return False, f\"Column '{col}' contains empty values\"\n        \n        return True, df\n    except Exception as e:\n        return False, f\"Error processing CSV: {str(e)}\"\n```",
+        "testStrategy": "1. Test with valid CSV files containing required columns\n2. Test with CSV files missing required columns\n3. Test with empty CSV files\n4. Test with CSV files containing empty values in required columns\n5. Test with different CSV encodings\n6. Test error handling for malformed CSV files",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Exa.AI API Integration",
+        "description": "Create a module to interact with Exa.AI's content retrieval API for scraping URL content, with support for batch processing.",
+        "status": "done",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "details": "1. Create an Exa.AI API client in utils/exa_api.py\n2. Implement functions to call the /contents endpoint\n3. Handle authentication with API key\n4. Implement error handling and retries for API calls\n5. Parse and extract relevant content from API responses\n6. Implement batch processing for Exa.AI (10 URLs at a time)\n\nNOTE: While Exa.AI supports batch processing of 10 URLs at a time, OpenRouter classification must be done one by one due to API structure and token limits. This distinction should be reflected in the implementation.\n\nSample implementation:\n```python\n# utils/exa_api.py\nimport requests\nimport time\nfrom typing import List, Dict, Any, Tuple\nfrom config import get_exa_api_key\n\nEXA_CONTENTS_ENDPOINT = \"https://api.exa.ai/contents\"\n\ndef get_url_content(url: str, max_retries: int = 3) -> Tuple[bool, str]:\n    \"\"\"Retrieve content from a single URL using Exa.AI API\"\"\"\n    headers = {\n        \"x-api-key\": get_exa_api_key(),\n        \"Content-Type\": \"application/json\"\n    }\n    payload = {\n        \"urls\": [url],\n        \"text\": True\n    }\n    \n    for attempt in range(max_retries):\n        try:\n            response = requests.post(EXA_CONTENTS_ENDPOINT, json=payload, headers=headers)\n            response.raise_for_status()\n            data = response.json()\n            \n            if data and \"contents\" in data and len(data[\"contents\"]) > 0:\n                content = data[\"contents\"][0].get(\"text\", \"\")\n                return True, content\n            return False, \"No content retrieved\"\n        except requests.exceptions.RequestException as e:\n            if attempt == max_retries - 1:\n                return False, f\"Error retrieving content: {str(e)}\"\n            time.sleep(1)  # Wait before retrying\n    \n    return False, \"Failed after multiple attempts\"\n\ndef process_urls_batch(urls: List[str], batch_size: int = 10) -> Dict[str, Tuple[bool, str]]:\n    \"\"\"Process multiple URLs in batches of 10 (Exa.AI's optimal batch size)\"\"\"\n    results = {}\n    for i in range(0, len(urls), batch_size):\n        batch = urls[i:i+batch_size]\n        \n        # Process batch of URLs in a single API call\n        headers = {\n            \"x-api-key\": get_exa_api_key(),\n            \"Content-Type\": \"application/json\"\n        }\n        payload = {\n            \"urls\": batch,\n            \"text\": True\n        }\n        \n        try:\n            response = requests.post(EXA_CONTENTS_ENDPOINT, json=payload, headers=headers)\n            response.raise_for_status()\n            data = response.json()\n            \n            if data and \"contents\" in data:\n                for content_item in data[\"contents\"]:\n                    url = content_item.get(\"url\", \"\")\n                    text = content_item.get(\"text\", \"\")\n                    results[url] = (True, text) if text else (False, \"No content retrieved\")\n            \n            # Add any missing URLs from the batch as failed\n            for url in batch:\n                if url not in results:\n                    results[url] = (False, \"URL not found in API response\")\n                    \n        except requests.exceptions.RequestException as e:\n            # If batch request fails, fall back to individual requests\n            for url in batch:\n                success, content = get_url_content(url)\n                results[url] = (success, content)\n        \n        # Add a small delay between batches to respect rate limits\n        if i + batch_size < len(urls):\n            time.sleep(0.5)\n    return results\n```",
+        "testStrategy": "1. Test API authentication with valid and invalid API keys\n2. Test content retrieval with valid URLs\n3. Test error handling with invalid or inaccessible URLs\n4. Test retry logic for transient errors\n5. Test batch processing with multiple URLs (specifically testing batches of 10 URLs)\n6. Test rate limiting behavior\n7. Test fallback to individual processing when batch processing fails\n8. Verify that batch processing is correctly implemented for Exa.AI while individual processing is used for OpenRouter",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Exa.AI batch processing (10 URLs at a time)",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Document the distinction between Exa.AI batch processing and OpenRouter single processing",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Update process_urls_batch function to handle optimal batch size of 10",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement fallback to individual processing when batch fails",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement OpenRouter API Integration for GPT OSS 120B",
+        "description": "Create a module to interact with OpenRouter API for accessing the GPT OSS 120B model for content classification.",
+        "details": "1. Create an OpenRouter API client in utils/openrouter_api.py\n2. Implement functions to call the chat completion API\n3. Create a classification prompt template\n4. Handle authentication with API key\n5. Parse classification results from API responses\n\nSample implementation:\n```python\n# utils/openrouter_api.py\nimport requests\nimport time\nfrom typing import Tuple\nfrom config import get_openrouter_api_key\n\nOPENROUTER_API_URL = \"https://openrouter.ai/api/v1/chat/completions\"\nMODEL = \"openai/gpt-oss-120b\"\n\ndef create_classification_prompt(business_name: str, content: str) -> str:\n    \"\"\"Create a prompt for classifying if content matches business name\"\"\"\n    return f\"\"\"You are a URL content classifier. Your task is to determine if the provided web content is associated with the specified business name.\n\nBusiness Name: {business_name}\n\nWeb Content:\n{content[:4000]}  # Limit content length to avoid token limits\n\nIs this content associated with the business '{business_name}'? Answer with only 'Yes' or 'No'.\"\"\"\n\ndef classify_content(business_name: str, content: str, max_retries: int = 3) -> Tuple[bool, str]:\n    \"\"\"Classify if content matches business name using GPT OSS 120B\"\"\"\n    headers = {\n        \"Authorization\": f\"Bearer {get_openrouter_api_key()}\",\n        \"Content-Type\": \"application/json\"\n    }\n    \n    prompt = create_classification_prompt(business_name, content)\n    payload = {\n        \"model\": MODEL,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"You are a URL content classifier that determines if web content is associated with a specific business name.\"},\n            {\"role\": \"user\", \"content\": prompt}\n        ],\n        \"max_tokens\": 10  # We only need a short yes/no response\n    }\n    \n    for attempt in range(max_retries):\n        try:\n            response = requests.post(OPENROUTER_API_URL, json=payload, headers=headers)\n            response.raise_for_status()\n            data = response.json()\n            \n            if \"choices\" in data and len(data[\"choices\"]) > 0:\n                result = data[\"choices\"][0][\"message\"][\"content\"].strip().lower()\n                # Check if response contains yes or no\n                if \"yes\" in result:\n                    return True, \"valid\"\n                elif \"no\" in result:\n                    return True, \"invalid\"\n                else:\n                    return False, f\"Unexpected classification result: {result}\"\n            return False, \"No classification result received\"\n        except requests.exceptions.RequestException as e:\n            if attempt == max_retries - 1:\n                return False, f\"Error classifying content: {str(e)}\"\n            time.sleep(1)  # Wait before retrying\n    \n    return False, \"Failed after multiple attempts\"\n```",
+        "testStrategy": "1. Test API authentication with valid and invalid API keys\n2. Test classification with sample business names and content\n3. Test error handling with invalid inputs\n4. Test retry logic for transient errors\n5. Verify classification results are correctly parsed\n6. Test with edge cases (very short content, very long content)",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Batch Processing Logic",
+        "description": "Create a module to handle batch processing of URLs with rate limiting and progress tracking.",
+        "details": "1. Create a batch processing module in utils/batch_processor.py\n2. Implement functions to process URLs in configurable batches\n3. Add rate limiting to respect API limits\n4. Implement progress tracking for UI feedback\n5. Handle errors and retries for individual items in a batch\n\nSample implementation:\n```python\n# utils/batch_processor.py\nimport asyncio\nimport time\nfrom typing import List, Dict, Any, Callable, Tuple\nimport pandas as pd\nfrom utils.exa_api import get_url_content\nfrom utils.openrouter_api import classify_content\n\nasync def process_item(row_idx: int, row: pd.Series, progress_callback: Callable = None) -> Dict[str, Any]:\n    \"\"\"Process a single row from the DataFrame\"\"\"\n    business_name = row['business_name']\n    url = row['URL']\n    result = {\n        'business_name': business_name,\n        'URL': url,\n        'scraped_content': '',\n        'result': 'error',\n        'error': None\n    }\n    \n    try:\n        # Get content from URL\n        success, content = get_url_content(url)\n        if not success:\n            result['error'] = content\n            return result\n        \n        result['scraped_content'] = content\n        \n        # Classify content\n        success, classification = classify_content(business_name, content)\n        if not success:\n            result['error'] = classification\n            return result\n        \n        result['result'] = classification\n        result['error'] = None\n    except Exception as e:\n        result['error'] = str(e)\n    finally:\n        if progress_callback:\n            progress_callback(row_idx)\n    \n    return result\n\nasync def process_batch(df: pd.DataFrame, batch_size: int = 5, progress_callback: Callable = None) -> pd.DataFrame:\n    \"\"\"Process DataFrame in batches with rate limiting\"\"\"\n    results = []\n    total_rows = len(df)\n    \n    for i in range(0, total_rows, batch_size):\n        batch_end = min(i + batch_size, total_rows)\n        batch_df = df.iloc[i:batch_end]\n        \n        # Create tasks for batch\n        tasks = []\n        for idx, row in batch_df.iterrows():\n            task = asyncio.create_task(process_item(idx, row, progress_callback))\n            tasks.append(task)\n        \n        # Wait for batch to complete\n        batch_results = await asyncio.gather(*tasks)\n        results.extend(batch_results)\n        \n        # Rate limiting delay between batches\n        if batch_end < total_rows:\n            await asyncio.sleep(0.5)\n    \n    return pd.DataFrame(results)\n\ndef process_dataframe(df: pd.DataFrame, batch_size: int = 5, progress_callback: Callable = None) -> pd.DataFrame:\n    \"\"\"Process DataFrame with progress tracking\"\"\"\n    return asyncio.run(process_batch(df, batch_size, progress_callback))\n```",
+        "testStrategy": "1. Test batch processing with sample data\n2. Verify rate limiting behavior\n3. Test progress tracking functionality\n4. Test error handling for individual items\n5. Test with different batch sizes\n6. Verify results DataFrame has the expected structure",
+        "priority": "high",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Create Streamlit UI - File Upload Component",
+        "description": "Implement the file upload component in the Streamlit UI with drag-and-drop support and validation feedback.",
+        "details": "1. Create the main Streamlit application file (app.py)\n2. Implement file upload component with drag-and-drop support\n3. Add validation for uploaded files\n4. Display validation feedback to users\n5. Show instructions for expected file format\n\nSample implementation:\n```python\n# app.py\nimport streamlit as st\nimport pandas as pd\nimport io\nfrom utils.csv_handler import validate_csv\n\nst.set_page_config(page_title=\"Link Checker Application\", layout=\"wide\")\n\nst.title(\"Link Checker Application\")\n\nst.markdown(\"\"\"\n## Upload CSV File\nUpload a CSV file containing business names and URLs to validate and classify.\n\n**Required CSV format:**\n- Must contain columns: `business_name` and `URL`\n- Each row should have a business name and its associated URL\n\"\"\")\n\nuploaded_file = st.file_uploader(\n    \"Choose a CSV file\", \n    type=\"csv\",\n    help=\"Upload a CSV file with 'business_name' and 'URL' columns\"\n)\n\nif uploaded_file is not None:\n    # Read file content\n    file_content = uploaded_file.read()\n    \n    # Validate CSV format\n    with st.spinner(\"Validating CSV format...\"):\n        is_valid, result = validate_csv(file_content)\n    \n    if is_valid:\n        st.success(\"CSV file is valid!\")\n        df = result\n        st.write(f\"Found {len(df)} rows to process\")\n        \n        # Display preview of the data\n        st.subheader(\"Data Preview\")\n        st.dataframe(df.head())\n        \n        # Store the validated DataFrame in session state for processing\n        st.session_state['validated_df'] = df\n        \n        # Show process button\n        if st.button(\"Process URLs\", type=\"primary\"):\n            st.session_state['start_processing'] = True\n    else:\n        st.error(f\"Error in CSV file: {result}\")\n        st.markdown(\"\"\"\n        ### CSV Requirements:\n        - File must be in CSV format\n        - Must contain columns: `business_name` and `URL`\n        - No empty values in required columns\n        \"\"\")\n```",
+        "testStrategy": "1. Test file upload with valid CSV files\n2. Test validation feedback for invalid files\n3. Test drag-and-drop functionality\n4. Verify preview of uploaded data\n5. Test session state management\n6. Verify UI instructions are clear and helpful",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Create Streamlit UI - Processing and Progress Display",
+        "description": "Implement the processing logic and progress display in the Streamlit UI.",
+        "details": "1. Add processing functionality to the Streamlit app\n2. Implement progress bar for batch processing\n3. Display processing statistics\n4. Show real-time updates during processing\n5. Handle cancellation and errors during processing\n\nSample implementation:\n```python\n# Add to app.py\nimport time\nfrom utils.batch_processor import process_dataframe\n\n# Check if processing should start\nif 'start_processing' in st.session_state and st.session_state['start_processing']:\n    # Reset the flag\n    st.session_state['start_processing'] = False\n    \n    if 'validated_df' in st.session_state:\n        df = st.session_state['validated_df']\n        total_rows = len(df)\n        \n        # Create a progress bar\n        progress_bar = st.progress(0)\n        status_text = st.empty()\n        \n        # Create a placeholder for statistics\n        stats_container = st.container()\n        \n        # Initialize counters\n        processed = 0\n        start_time = time.time()\n        \n        # Progress callback function\n        def update_progress(idx):\n            nonlocal processed\n            processed += 1\n            progress = processed / total_rows\n            progress_bar.progress(progress)\n            elapsed = time.time() - start_time\n            estimated_total = elapsed / progress if progress > 0 else 0\n            remaining = estimated_total - elapsed\n            status_text.text(f\"Processed {processed}/{total_rows} URLs. Estimated time remaining: {remaining:.1f}s\")\n        \n        try:\n            with st.spinner(\"Processing URLs...\"):\n                # Process the DataFrame\n                batch_size = 5  # Configurable batch size\n                result_df = process_dataframe(df, batch_size, update_progress)\n                \n                # Store results in session state\n                st.session_state['result_df'] = result_df\n                \n                # Complete the progress bar\n                progress_bar.progress(1.0)\n                status_text.text(f\"Completed processing {total_rows} URLs in {time.time() - start_time:.1f}s\")\n                \n                # Display statistics\n                with stats_container:\n                    st.subheader(\"Processing Statistics\")\n                    valid_count = sum(result_df['result'] == 'valid')\n                    invalid_count = sum(result_df['result'] == 'invalid')\n                    error_count = sum(result_df['error'].notna())\n                    \n                    col1, col2, col3 = st.columns(3)\n                    col1.metric(\"Valid URLs\", valid_count)\n                    col2.metric(\"Invalid URLs\", invalid_count)\n                    col3.metric(\"Errors\", error_count)\n        except Exception as e:\n            st.error(f\"Error during processing: {str(e)}\")\n```",
+        "testStrategy": "1. Test progress bar updates during processing\n2. Verify estimated time calculations\n3. Test processing with different batch sizes\n4. Verify statistics display after processing\n5. Test error handling during processing\n6. Verify session state management for results",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Create Streamlit UI - Results Display and Filtering",
+        "description": "Implement the results display with interactive table, filtering, and sorting capabilities.",
+        "details": "1. Add results display to the Streamlit app\n2. Implement interactive table using streamlit-aggrid\n3. Add filtering capabilities by result status\n4. Implement sorting for all columns\n5. Add pagination for large datasets\n\nSample implementation:\n```python\n# Add to app.py\nfrom st_aggrid import AgGrid, GridOptionsBuilder, JsCode\nfrom st_aggrid.grid_options_builder import GridOptionsBuilder\n\n# Display results if available\nif 'result_df' in st.session_state and not st.session_state.get('start_processing', False):\n    result_df = st.session_state['result_df']\n    \n    st.subheader(\"Results\")\n    \n    # Add filter options\n    filter_options = [\"All\", \"Valid\", \"Invalid\", \"Error\"]\n    selected_filter = st.selectbox(\"Filter results\", filter_options)\n    \n    # Apply filter\n    filtered_df = result_df\n    if selected_filter == \"Valid\":\n        filtered_df = result_df[result_df['result'] == 'valid']\n    elif selected_filter == \"Invalid\":\n        filtered_df = result_df[result_df['result'] == 'invalid']\n    elif selected_filter == \"Error\":\n        filtered_df = result_df[result_df['error'].notna()]\n    \n    # Configure grid options\n    gb = GridOptionsBuilder.from_dataframe(filtered_df)\n    gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)\n    gb.configure_column(\"business_name\", headerName=\"Business Name\", filter=True)\n    gb.configure_column(\"URL\", headerName=\"URL\", filter=True)\n    gb.configure_column(\"result\", headerName=\"Result\", filter=True)\n    gb.configure_column(\"scraped_content\", headerName=\"Scraped Content\", width=300, wrapText=True)\n    gb.configure_column(\"error\", headerName=\"Error\", width=200, wrapText=True)\n    \n    # Add cell styling\n    cell_style = JsCode(\"\"\"\n    function(params) {\n        if (params.data.result === 'valid') {\n            return {'color': 'green'};\n        } else if (params.data.result === 'invalid') {\n            return {'color': 'red'};\n        } else if (params.data.error) {\n            return {'color': 'orange'};\n        }\n        return {};\n    }\n    \"\"\")\n    gb.configure_grid_options(rowStyle=cell_style)\n    \n    grid_options = gb.build()\n    \n    # Display the grid\n    AgGrid(\n        filtered_df,\n        gridOptions=grid_options,\n        height=400,\n        fit_columns_on_grid_load=True,\n        allow_unsafe_jscode=True\n    )\n    \n    # Show row count\n    st.write(f\"Showing {len(filtered_df)} of {len(result_df)} results\")\n```",
+        "testStrategy": "1. Test interactive table with sample results\n2. Verify filtering functionality for different result types\n3. Test sorting on different columns\n4. Verify pagination with large datasets\n5. Test cell styling for different result types\n6. Verify row count display",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement CSV Export Functionality",
+        "description": "Create functionality to export processed results as a CSV file for download.",
+        "details": "1. Add CSV export functionality to the Streamlit app\n2. Implement download button for processed results\n3. Format CSV data for export\n4. Include all original and new columns in the export\n\nSample implementation:\n```python\n# Add to app.py\nimport base64\n\ndef get_csv_download_link(df, filename=\"processed_results.csv\"):\n    \"\"\"Generate a download link for a CSV file\"\"\"\n    csv = df.to_csv(index=False)\n    b64 = base64.b64encode(csv.encode()).decode()\n    href = f'<a href=\"data:file/csv;base64,{b64}\" download=\"{filename}\">Download CSV file</a>'\n    return href\n\n# Add download button if results are available\nif 'result_df' in st.session_state and not st.session_state.get('start_processing', False):\n    # ... (after displaying results)\n    \n    st.subheader(\"Export Results\")\n    \n    # Allow user to select columns to export\n    all_columns = list(result_df.columns)\n    selected_columns = st.multiselect(\n        \"Select columns to export\",\n        all_columns,\n        default=all_columns\n    )\n    \n    if selected_columns:\n        export_df = result_df[selected_columns]\n        \n        # Generate filename with timestamp\n        from datetime import datetime\n        timestamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")\n        filename = f\"link_checker_results_{timestamp}.csv\"\n        \n        # Create download button\n        csv = export_df.to_csv(index=False)\n        st.download_button(\n            label=\"Download Results as CSV\",\n            data=csv,\n            file_name=filename,\n            mime=\"text/csv\"\n        )\n```",
+        "testStrategy": "1. Test CSV export with sample results\n2. Verify all columns are included in the export\n3. Test column selection functionality\n4. Verify CSV format is correct\n5. Test download functionality in different browsers\n6. Verify filename includes timestamp",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Error Handling and Logging",
+        "description": "Create comprehensive error handling and logging throughout the application.",
+        "details": "1. Implement a logging module for the application\n2. Add error handling for all API calls and processing steps\n3. Create user-friendly error messages\n4. Log detailed error information for debugging\n5. Implement retry logic for transient errors\n\nSample implementation:\n```python\n# utils/logging_utils.py\nimport logging\nimport sys\nfrom datetime import datetime\n\ndef setup_logger():\n    \"\"\"Set up application logger\"\"\"\n    logger = logging.getLogger(\"link_checker\")\n    logger.setLevel(logging.INFO)\n    \n    # Create console handler\n    console_handler = logging.StreamHandler(sys.stdout)\n    console_handler.setLevel(logging.INFO)\n    \n    # Create file handler\n    timestamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")\n    file_handler = logging.FileHandler(f\"link_checker_{timestamp}.log\")\n    file_handler.setLevel(logging.DEBUG)\n    \n    # Create formatter\n    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')\n    console_handler.setFormatter(formatter)\n    file_handler.setFormatter(formatter)\n    \n    # Add handlers to logger\n    logger.addHandler(console_handler)\n    logger.addHandler(file_handler)\n    \n    return logger\n\n# Add error handling wrapper\ndef handle_errors(func):\n    \"\"\"Decorator for handling errors in functions\"\"\"\n    def wrapper(*args, **kwargs):\n        logger = logging.getLogger(\"link_checker\")\n        try:\n            return func(*args, **kwargs)\n        except Exception as e:\n            logger.error(f\"Error in {func.__name__}: {str(e)}\", exc_info=True)\n            raise\n    return wrapper\n```\n\n# Update app.py to use logger\n```python\n# Add to app.py\nfrom utils.logging_utils import setup_logger, handle_errors\n\n# Setup logger\nlogger = setup_logger()\n\n# Wrap main processing function\n@handle_errors\ndef process_with_logging(df, batch_size, progress_callback):\n    logger.info(f\"Starting processing of {len(df)} URLs with batch size {batch_size}\")\n    result = process_dataframe(df, batch_size, progress_callback)\n    logger.info(f\"Completed processing {len(df)} URLs\")\n    return result\n\n# Update processing code to use the wrapped function\ntry:\n    with st.spinner(\"Processing URLs...\"):\n        result_df = process_with_logging(df, batch_size, update_progress)\n        # ... rest of the code\nexcept Exception as e:\n    logger.error(f\"Error during processing: {str(e)}\")\n    st.error(f\"Error during processing: {str(e)}\")\n    st.error(\"Check the logs for more details.\")\n```",
+        "testStrategy": "1. Test logging configuration\n2. Verify error handling for different types of errors\n3. Test retry logic for transient errors\n4. Verify log file creation and content\n5. Test user-friendly error messages in the UI\n6. Verify detailed error logging for debugging",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5,
+          6
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement Configuration Management",
+        "description": "Create a configuration management system for application settings and parameters.",
+        "details": "1. Create a configuration module for application settings\n2. Implement UI for configuring batch size, retries, and other parameters\n3. Store configuration in session state\n4. Add validation for configuration parameters\n5. Provide default values for all settings\n\nSample implementation:\n```python\n# utils/config_manager.py\nfrom typing import Dict, Any\n\nDEFAULT_CONFIG = {\n    \"batch_size\": 5,\n    \"max_retries\": 3,\n    \"rate_limit_delay\": 0.5,\n    \"content_max_length\": 4000,\n    \"timeout\": 30\n}\n\ndef validate_config(config: Dict[str, Any]) -> Dict[str, str]:\n    \"\"\"Validate configuration parameters\"\"\"\n    errors = {}\n    \n    # Validate batch_size\n    if \"batch_size\" in config:\n        if not isinstance(config[\"batch_size\"], int) or config[\"batch_size\"] < 1:\n            errors[\"batch_size\"] = \"Batch size must be a positive integer\"\n    \n    # Validate max_retries\n    if \"max_retries\" in config:\n        if not isinstance(config[\"max_retries\"], int) or config[\"max_retries\"] < 0:\n            errors[\"max_retries\"] = \"Max retries must be a non-negative integer\"\n    \n    # Validate rate_limit_delay\n    if \"rate_limit_delay\" in config:\n        if not isinstance(config[\"rate_limit_delay\"], (int, float)) or config[\"rate_limit_delay\"] < 0:\n            errors[\"rate_limit_delay\"] = \"Rate limit delay must be a non-negative number\"\n    \n    return errors\n\ndef get_config(user_config: Dict[str, Any] = None) -> Dict[str, Any]:\n    \"\"\"Get configuration with defaults applied\"\"\"\n    config = DEFAULT_CONFIG.copy()\n    if user_config:\n        config.update(user_config)\n    return config\n```\n\n# Add to app.py\n```python\n# Add to app.py\nfrom utils.config_manager import get_config, validate_config, DEFAULT_CONFIG\n\n# Add configuration section\nwith st.sidebar:\n    st.header(\"Configuration\")\n    \n    # Initialize config in session state if not present\n    if \"config\" not in st.session_state:\n        st.session_state[\"config\"] = DEFAULT_CONFIG.copy()\n    \n    # Create input fields for configuration\n    batch_size = st.number_input(\n        \"Batch Size\",\n        min_value=1,\n        max_value=20,\n        value=st.session_state[\"config\"][\"batch_size\"],\n        help=\"Number of URLs to process in parallel\"\n    )\n    \n    max_retries = st.number_input(\n        \"Max Retries\",\n        min_value=0,\n        max_value=10,\n        value=st.session_state[\"config\"][\"max_retries\"],\n        help=\"Maximum number of retry attempts for failed requests\"\n    )\n    \n    rate_limit_delay = st.number_input(\n        \"Rate Limit Delay (seconds)\",\n        min_value=0.0,\n        max_value=5.0,\n        value=st.session_state[\"config\"][\"rate_limit_delay\"],\n        step=0.1,\n        help=\"Delay between batch requests to respect API rate limits\"\n    )\n    \n    # Update config in session state\n    user_config = {\n        \"batch_size\": batch_size,\n        \"max_retries\": max_retries,\n        \"rate_limit_delay\": rate_limit_delay\n    }\n    \n    # Validate config\n    errors = validate_config(user_config)\n    if errors:\n        for field, error in errors.items():\n            st.error(f\"{field}: {error}\")\n    else:\n        st.session_state[\"config\"].update(user_config)\n    \n    # Show current configuration\n    st.write(\"Current Configuration:\")\n    st.json(st.session_state[\"config\"])\n    \n    # Reset to defaults button\n    if st.button(\"Reset to Defaults\"):\n        st.session_state[\"config\"] = DEFAULT_CONFIG.copy()\n        st.experimental_rerun()\n```",
+        "testStrategy": "1. Test configuration validation with valid and invalid values\n2. Verify default values are applied correctly\n3. Test UI inputs for configuration parameters\n4. Verify configuration is stored in session state\n5. Test reset to defaults functionality\n6. Verify configuration is used in processing functions",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          8
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Implement Dockerization",
+        "description": "Create Docker configuration for containerizing the Link Checker Application.",
+        "details": "1. Create Dockerfile for the application\n2. Configure Docker Compose for easy deployment\n3. Set up environment variable handling in Docker\n4. Create Docker-specific documentation\n5. Implement health check endpoint\n\nSample implementation:\n```dockerfile\n# Dockerfile\nFROM python:3.9-slim\n\nWORKDIR /app\n\n# Install dependencies\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\n\n# Copy application code\nCOPY . .\n\n# Set environment variables\nENV PYTHONUNBUFFERED=1\n\n# Expose port\nEXPOSE 8501\n\n# Health check\nHEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1\n\n# Run the application\nCMD [\"streamlit\", \"run\", \"app.py\", \"--server.port=8501\", \"--server.address=0.0.0.0\"]\n```\n\n```yaml\n# docker-compose.yml\nversion: '3'\n\nservices:\n  link-checker:\n    build: .\n    ports:\n      - \"8501:8501\"\n    environment:\n      - EXA_API_KEY=${EXA_API_KEY}\n      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}\n    volumes:\n      - ./logs:/app/logs\n    restart: unless-stopped\n```\n\n# Add health check endpoint to app.py\n```python\n# Add to app.py\n@st.cache_data\ndef health_check():\n    \"\"\"Health check endpoint for Docker\"\"\"\n    return {\"status\": \"healthy\"}\n\n# Add route for health check\nif \"health\" in st.experimental_get_query_params():\n    st.json(health_check())\n    st.stop()\n```",
+        "testStrategy": "1. Test Docker build process\n2. Verify container starts correctly\n3. Test environment variable configuration\n4. Verify health check endpoint\n5. Test volume mounting for logs\n6. Verify application is accessible from host",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          11
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Create User Documentation",
+        "description": "Create comprehensive user documentation for the Link Checker Application.",
+        "details": "1. Create README.md with installation and usage instructions\n2. Create user manual with screenshots\n3. Add troubleshooting guide\n4. Create FAQ section\n5. Document configuration options\n\nSample implementation:\n```markdown\n# Link Checker Application\n\nA Streamlit-based web application for validating and classifying business URLs against their associated business names.\n\n## Features\n\n- Upload CSV files with business names and URLs\n- Validate URL accessibility and content retrieval\n- Classify whether scraped content matches the expected business\n- Download enriched results for further analysis\n\n## Installation\n\n### Prerequisites\n\n- Python 3.8 or higher\n- API keys for Exa.AI and OpenRouter\n\n### Local Installation\n\n1. Clone the repository:\n   ```\n   git clone https://github.com/yourusername/link-checker.git\n   cd link-checker\n   ```\n\n2. Install dependencies:\n   ```\n   pip install -r requirements.txt\n   ```\n\n3. Create a `.env` file with your API keys:\n   ```\n   EXA_API_KEY=your_exa_api_key\n   OPENROUTER_API_KEY=your_openrouter_api_key\n   ```\n\n4. Run the application:\n   ```\n   streamlit run app.py\n   ```\n\n### Docker Installation\n\n1. Clone the repository:\n   ```\n   git clone https://github.com/yourusername/link-checker.git\n   cd link-checker\n   ```\n\n2. Create a `.env` file with your API keys:\n   ```\n   EXA_API_KEY=your_exa_api_key\n   OPENROUTER_API_KEY=your_openrouter_api_key\n   ```\n\n3. Build and run with Docker Compose:\n   ```\n   docker-compose up -d\n   ```\n\n4. Access the application at http://localhost:8501\n\n## Usage\n\n### Preparing Your CSV File\n\nCreate a CSV file with the following columns:\n- `business_name`: The name of the business\n- `URL`: The URL associated with the business\n\nExample:\n```\nbusiness_name,URL\nAcme Corporation,https://www.acme.com\nGlobal Industries,https://www.globalindustries.com\n```\n\n### Processing URLs\n\n1. Upload your CSV file using the file upload component\n2. Review the data preview to ensure it's correct\n3. Click \"Process URLs\" to start processing\n4. Wait for processing to complete\n5. View and filter results\n6. Download the processed results\n\n## Configuration\n\nThe following configuration options are available in the sidebar:\n\n- **Batch Size**: Number of URLs to process in parallel (default: 5)\n- **Max Retries**: Maximum number of retry attempts for failed requests (default: 3)\n- **Rate Limit Delay**: Delay between batch requests in seconds (default: 0.5)\n\n## Troubleshooting\n\n### Common Issues\n\n- **CSV Upload Errors**: Ensure your CSV file has the required columns and no empty values\n- **API Key Errors**: Check that your API keys are correctly set in the .env file\n- **Processing Errors**: Check the logs for detailed error messages\n\n### Logs\n\nLogs are stored in the `logs` directory with timestamps. Check these logs for detailed error information.\n\n## FAQ\n\n**Q: How many URLs can I process at once?**\nA: The application can handle up to 1000 URLs, but processing time will increase with larger datasets.\n\n**Q: How accurate is the classification?**\nA: The classification uses GPT OSS 120B, which provides high accuracy but may not be perfect in all cases.\n\n**Q: Can I customize the classification prompt?**\nA: Currently, the classification prompt is fixed, but future versions may allow customization.\n```",
+        "testStrategy": "1. Verify installation instructions are accurate\n2. Test usage instructions with sample data\n3. Verify troubleshooting guide addresses common issues\n4. Test FAQ answers for accuracy\n5. Verify configuration documentation matches actual options\n6. Test Docker installation instructions",
+        "priority": "low",
+        "dependencies": [
+          10,
+          12,
+          13
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Testing Suite",
+        "description": "Create a comprehensive testing suite for the Link Checker Application.",
+        "details": "1. Implement unit tests for core functionality\n2. Create integration tests for API integrations\n3. Implement end-to-end tests for the complete workflow\n4. Add performance tests for large datasets\n5. Create test fixtures and mocks\n\nSample implementation:\n```python\n# tests/test_csv_handler.py\nimport unittest\nimport pandas as pd\nimport io\nfrom utils.csv_handler import validate_csv\n\nclass TestCSVHandler(unittest.TestCase):\n    def test_valid_csv(self):\n        # Create a valid CSV\n        csv_content = \"business_name,URL\\nAcme Corp,https://acme.com\\n\"\n        is_valid, result = validate_csv(csv_content.encode())\n        self.assertTrue(is_valid)\n        self.assertIsInstance(result, pd.DataFrame)\n        self.assertEqual(len(result), 1)\n    \n    def test_missing_columns(self):\n        # Create a CSV with missing columns\n        csv_content = \"name,website\\nAcme Corp,https://acme.com\\n\"\n        is_valid, result = validate_csv(csv_content.encode())\n        self.assertFalse(is_valid)\n        self.assertIn(\"Missing required columns\", result)\n    \n    def test_empty_values(self):\n        # Create a CSV with empty values\n        csv_content = \"business_name,URL\\nAcme Corp,\\n\"\n        is_valid, result = validate_csv(csv_content.encode())\n        self.assertFalse(is_valid)\n        self.assertIn(\"contains empty values\", result)\n\n# tests/test_exa_api.py\nimport unittest\nfrom unittest.mock import patch, MagicMock\nfrom utils.exa_api import get_url_content\n\nclass TestExaAPI(unittest.TestCase):\n    @patch('utils.exa_api.requests.post')\n    def test_successful_content_retrieval(self, mock_post):\n        # Mock successful API response\n        mock_response = MagicMock()\n        mock_response.json.return_value = {\n            \"contents\": [\n                {\"text\": \"Sample content\"}\n            ]\n        }\n        mock_response.raise_for_status.return_value = None\n        mock_post.return_value = mock_response\n        \n        success, content = get_url_content(\"https://example.com\")\n        self.assertTrue(success)\n        self.assertEqual(content, \"Sample content\")\n    \n    @patch('utils.exa_api.requests.post')\n    def test_api_error(self, mock_post):\n        # Mock API error\n        mock_post.side_effect = Exception(\"API Error\")\n        \n        success, content = get_url_content(\"https://example.com\")\n        self.assertFalse(success)\n        self.assertIn(\"Error\", content)\n\n# tests/test_integration.py\nimport unittest\nimport pandas as pd\nfrom utils.batch_processor import process_dataframe\n\nclass TestIntegration(unittest.TestCase):\n    def test_end_to_end_processing(self):\n        # Create a small test DataFrame\n        df = pd.DataFrame({\n            'business_name': ['Test Company'],\n            'URL': ['https://example.com']\n        })\n        \n        # Process the DataFrame\n        result_df = process_dataframe(df, batch_size=1)\n        \n        # Verify result structure\n        self.assertIn('scraped_content', result_df.columns)\n        self.assertIn('result', result_df.columns)\n\n# Run tests\nif __name__ == '__main__':\n    unittest.main()\n```\n\n# Create pytest configuration\n```ini\n# pytest.ini\n[pytest]\npython_files = test_*.py\npython_classes = Test*\npython_functions = test_*\ntestpaths = tests\n```\n\n# Add test requirements\n```\n# test-requirements.txt\npytest>=6.2.5\npytest-cov>=2.12.1\nrequests-mock>=1.9.3\n```",
+        "testStrategy": "1. Run unit tests for individual components\n2. Test API integrations with mocked responses\n3. Run integration tests for end-to-end workflow\n4. Verify test coverage with pytest-cov\n5. Test error handling and edge cases\n6. Run performance tests with larger datasets",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-06T01:03:21.024Z",
+      "updated": "2025-08-06T04:53:41.424Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

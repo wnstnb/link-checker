@@ -1,0 +1,16 @@
+business_name,URL
+Apple Inc,https://www.apple.com
+Microsoft Corporation,https://www.microsoft.com
+Google LLC,https://www.google.com
+Amazon.com Inc,https://www.amazon.com
+Tesla Inc,https://www.tesla.com
+Apple Inc,https://www.microsoft.com
+Microsoft Corporation,https://www.apple.com
+Google LLC,https://www.amazon.com
+Amazon.com Inc,https://www.tesla.com
+Tesla Inc,https://www.google.com
+Fake Business 1,https://example.com
+Fake Business 2,https://httpbin.org/404
+Fake Business 3,https://nonexistentwebsite12345.com
+Fake Business 4,https://httpbin.org/status/500
+Fake Business 5,https://httpbin.org/delay/10 

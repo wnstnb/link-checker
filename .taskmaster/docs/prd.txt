@@ -1,0 +1,276 @@
+# Link Checker Application - Product Requirements Document
+
+## 1. Executive Summary
+
+The Link Checker Application is a Streamlit-based web application designed to validate and classify business URLs against their associated business names. The application processes CSV files containing business names and URLs, scrapes content from the URLs using Exa.AI's content retrieval API, and uses GPT OSS 120B (via OpenRouter) to classify whether the scraped content is associated with the given business name.
+
+## 2. Problem Statement
+
+Businesses and organizations often maintain lists of URLs associated with their operations, partners, or competitors. Manually validating these URLs and confirming their association with specific business names is time-consuming and error-prone. There is a need for an automated solution that can:
+- Process large batches of URLs efficiently
+- Validate URL accessibility and content retrieval
+- Intelligently classify whether scraped content matches the expected business
+- Provide clear, downloadable results for further analysis
+
+## 3. Solution Overview
+
+The Link Checker Application provides a user-friendly interface for bulk URL validation and classification. Users upload a CSV file with business names and URLs, and the application returns enriched data including scraped content and classification results.
+
+## 4. Core Features
+
+### 4.1 CSV Upload and Processing
+- Accept CSV files with two columns: `business_name` and `URL`
+- Validate CSV format and required columns
+- Support for various CSV formats and encodings
+- Display upload progress and validation status
+
+### 4.2 URL Content Scraping
+- Integrate with Exa.AI's `/contents` endpoint for reliable content retrieval
+- Handle batch processing of URLs efficiently
+- Implement error handling for inaccessible or invalid URLs
+- Store scraped content as `scraped_content` column
+
+### 4.3 AI-Powered Classification
+- Use GPT OSS 120B model via OpenRouter API for classification
+- Implement one-shot classification to determine if scraped content matches business name
+- Generate binary classification result (valid/invalid association)
+- Store classification result as `result` column
+
+### 4.4 Results Display and Export
+- Display processing results in an interactive table
+- Show processing statistics and summary
+- Enable CSV download with all original and new columns
+- Provide filtering and sorting capabilities
+
+## 5. Technical Requirements
+
+### 5.1 Frontend (Streamlit)
+- Modern, responsive web interface
+- File upload component with drag-and-drop support
+- Progress indicators for processing steps
+- Interactive data table with sorting and filtering
+- Download functionality for processed results
+
+### 5.2 Backend Processing
+- CSV parsing and validation
+- Batch URL processing with rate limiting
+- Integration with Exa.AI API for content retrieval
+- Integration with OpenRouter API for GPT OSS 120B classification
+- Error handling and logging
+
+### 5.3 API Integrations
+
+#### Exa.AI Integration
+- Endpoint: `https://api.exa.ai/contents`
+- Method: POST
+- Authentication: x-api-key header
+- Request payload: JSON with URLs array and text=true
+- Handle response parsing and error cases
+
+#### OpenRouter Integration
+- Model: `openai/gpt-oss-120b`
+- Endpoint: OpenRouter's OpenAI-compatible API
+- Authentication: Bearer token
+- Request format: Chat completion with classification prompt
+- Response parsing for binary classification result
+
+### 5.4 Data Flow
+1. User uploads CSV with business_name and URL columns
+2. Application validates CSV format and extracts URLs
+3. URLs are sent to Exa.AI in batches for content retrieval
+4. Scraped content is stored in new `scraped_content` column
+5. Each business_name + scraped_content pair is sent to GPT OSS 120B for classification
+6. Classification results are stored in new `result` column
+7. Final CSV with all columns is available for download
+
+## 6. User Interface Requirements
+
+### 6.1 Main Dashboard
+- File upload section with clear instructions
+- Processing status and progress indicators
+- Results table with sortable columns
+- Download button for processed CSV
+- Error messages and validation feedback
+
+### 6.2 Data Display
+- Interactive table showing all columns:
+  - business_name (original)
+  - URL (original)
+  - scraped_content (new)
+  - result (new)
+- Filtering capabilities by result status
+- Sorting by any column
+- Pagination for large datasets
+
+### 6.3 Processing Feedback
+- Real-time progress updates
+- Processing time estimates
+- Success/error counts
+- Detailed error logging for failed URLs
+
+## 7. Performance Requirements
+
+### 7.1 Processing Speed
+- Handle CSV files with up to 1000 URLs efficiently
+- Implement batch processing to optimize API calls
+- Provide progress updates during processing
+- Target processing time: < 5 minutes for 100 URLs
+
+### 7.2 Reliability
+- Graceful handling of API failures
+- Retry logic for transient errors
+- Timeout handling for slow responses
+- Comprehensive error logging
+
+### 7.3 Scalability
+- Modular design for easy scaling
+- Configurable batch sizes
+- Rate limiting to respect API limits
+- Memory-efficient processing for large datasets
+
+## 8. Security and Privacy
+
+### 8.1 Data Handling
+- No permanent storage of uploaded files
+- Secure API key management
+- HTTPS-only communication
+- Input validation and sanitization
+
+### 8.2 API Security
+- Secure storage of Exa.AI and OpenRouter API keys
+- Environment variable configuration
+- No exposure of API keys in client-side code
+
+## 9. Error Handling
+
+### 9.1 CSV Validation Errors
+- Invalid file format
+- Missing required columns
+- Empty or malformed data
+- Encoding issues
+
+### 9.2 URL Processing Errors
+- Invalid URL format
+- Network connectivity issues
+- Timeout errors
+- Rate limiting responses
+
+### 9.3 API Integration Errors
+- Authentication failures
+- Service unavailability
+- Response parsing errors
+- Quota exceeded errors
+
+## 10. Success Metrics
+
+### 10.1 Functional Metrics
+- Successful processing rate > 95%
+- Classification accuracy > 90%
+- Processing time < 5 minutes for 100 URLs
+- Zero data loss during processing
+
+### 10.2 User Experience Metrics
+- Intuitive interface requiring minimal training
+- Clear error messages and guidance
+- Fast response times for UI interactions
+- Successful file upload and download rates
+
+## 11. Future Enhancements
+
+### 11.1 Advanced Features
+- Support for additional file formats (Excel, JSON)
+- Custom classification prompts
+- Batch processing scheduling
+- Historical processing logs
+
+### 11.2 Analytics and Reporting
+- Processing statistics dashboard
+- Classification confidence scores
+- Error trend analysis
+- Performance metrics tracking
+
+### 11.3 Integration Capabilities
+- REST API for programmatic access
+- Webhook notifications for processing completion
+- Integration with external data sources
+- Custom export formats
+
+## 12. Technical Stack
+
+### 12.1 Frontend
+- Streamlit (Python web framework)
+- Streamlit-aggrid for advanced data tables
+- Streamlit-file-uploader for file handling
+
+### 12.2 Backend
+- Python 3.8+
+- Pandas for CSV processing
+- Requests for HTTP API calls
+- Asyncio for concurrent processing
+
+### 12.3 External APIs
+- Exa.AI for content retrieval
+- OpenRouter for GPT OSS 120B access
+
+### 12.4 Development Tools
+- Git for version control
+- Poetry for dependency management
+- Docker for containerization
+- Environment variables for configuration
+
+## 13. Deployment Requirements
+
+### 13.1 Environment Setup
+- Python virtual environment
+- Required API keys configuration
+- Environment variable management
+- Logging configuration
+
+### 13.2 Production Considerations
+- Docker containerization
+- Health check endpoints
+- Monitoring and alerting
+- Backup and recovery procedures
+
+## 14. Testing Strategy
+
+### 14.1 Unit Testing
+- CSV parsing and validation
+- API integration functions
+- Classification logic
+- Error handling scenarios
+
+### 14.2 Integration Testing
+- End-to-end processing workflows
+- API response handling
+- File upload and download
+- Error recovery scenarios
+
+### 14.3 Performance Testing
+- Large CSV file processing
+- Concurrent user handling
+- API rate limit testing
+- Memory usage optimization
+
+## 15. Documentation Requirements
+
+### 15.1 User Documentation
+- Installation and setup guide
+- User manual with screenshots
+- Troubleshooting guide
+- FAQ section
+
+### 15.2 Technical Documentation
+- API integration documentation
+- Configuration guide
+- Deployment instructions
+- Development setup guide
+
+## 16. Success Criteria
+
+The Link Checker Application will be considered successful when:
+1. Users can successfully upload CSV files and receive processed results
+2. The application correctly classifies business-URL associations with high accuracy
+3. Processing times meet performance requirements
+4. Error handling provides clear feedback to users
+5. The application is stable and reliable in production use 
